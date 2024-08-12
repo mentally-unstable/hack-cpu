@@ -9,10 +9,14 @@
 #include "cpu.h"
 
 void draw_rom(abuf_t *ab, int i);
+void draw_ram(abuf_t *ab, int i);
 void draw_scr(abuf_t *ab, int i);
 void draw_reg(abuf_t *ab, int i);
 
 #define ROM_WIDTH 25
+#define ARROW_WIDTH 5
+#define MAX_SCR_WIDTH 50
+#define MIN_WIDTH (MAX_SCR_WIDTH + ARROW_WIDTH + ROM_WIDTH)
 
 struct cpu_t {
     // registers
@@ -29,6 +33,7 @@ struct sim_t {
     int paused;
     char **rombuf;
     int romlines;
+    int romoff; // offset, scrolling
     char *screenbuf;
 
     int width;
@@ -74,6 +79,7 @@ void cpu_render(void) {
 
     for (int i = 0; i < sim.height; i++) {
         draw_rom(&ab, i);
+        // draw_ram(&ab, i);
         // draw_scr(&ab, i);
         // draw_reg(&ab, i);
         abAppend(&ab, "\x1b[K", 3);
@@ -91,19 +97,30 @@ void draw_rom(abuf_t *ab, int i) {
     int padding;
 
     if (i < sim.romlines) {
+        // numbers
+        char num[10];
+        snprintf(&num[0], 10, "%d", i);
+        abAppend(ab, &num[0], strlen(&num[0]));
+        abAppend(ab, "| ", 2);
+
+        // text
         abAppend(ab, cpu.rom[i], strlen(cpu.rom[i]));
-        padding = ROM_WIDTH - strlen(cpu.rom[i]);
+        padding = ROM_WIDTH - strlen(cpu.rom[i]) - ARROW_WIDTH;
     } else {
         abAppend(ab, "~", 1);
-        padding = ROM_WIDTH - 1;
+        padding = ROM_WIDTH - 1 - ARROW_WIDTH;
     }
 
     while (padding--) abAppend(ab, " ", 1);
 
     if (cpu.pc == i)
-        abAppend(ab, " <--", 4);
+        abAppend(ab, " <-- ", ARROW_WIDTH);
     else
-        abAppend(ab, "    ", 4);
+        abAppend(ab, "     ", ARROW_WIDTH);
+}
+
+void draw_ram(abuf_t *ab, int i) {
+    if (i) abAppend(ab, "RAM", 3);
 }
 
 void draw_scr(abuf_t *ab, int i) {
