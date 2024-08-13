@@ -1,5 +1,6 @@
 // hello
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include "args.h"
@@ -37,5 +38,6 @@ int main(int argc, char **argv) {
         cpu_render();
     }
 
+    free(&rom[0][0]);
     return 0;
 }

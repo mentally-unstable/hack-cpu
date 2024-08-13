@@ -24,6 +24,8 @@ char **file_import(char *name, int *lines) {
     int l = 0;
     char **ret = str_split(str, '\n', &l);
 
+    free(str);
+
     *lines = l;
     return ret;
 }

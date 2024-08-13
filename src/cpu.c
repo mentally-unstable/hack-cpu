@@ -10,9 +10,7 @@
 
 void draw_rom(abuf_t *ab, int i);
 void draw_ram(abuf_t *ab, int i);
-void draw_scr(abuf_t *ab, int i);
-void draw_reg(abuf_t *ab, int i);
-
+void draw_scr(abuf_t *ab, int i); void draw_reg(abuf_t *ab, int i);
 #define ROM_WIDTH 25
 #define ARROW_WIDTH 5
 #define MAX_SCR_WIDTH 50
@@ -97,26 +95,19 @@ void draw_rom(abuf_t *ab, int i) {
     int padding;
 
     if (i < sim.romlines) {
-        // numbers
-        char num[10];
-        snprintf(&num[0], 10, "%d", i);
-        abAppend(ab, &num[0], strlen(&num[0]));
-        abAppend(ab, "| ", 2);
-
-        // text
         abAppend(ab, cpu.rom[i], strlen(cpu.rom[i]));
-        padding = ROM_WIDTH - strlen(cpu.rom[i]) - ARROW_WIDTH;
+        padding = ROM_WIDTH - strlen(cpu.rom[i]);
     } else {
         abAppend(ab, "~", 1);
-        padding = ROM_WIDTH - 1 - ARROW_WIDTH;
+        padding = ROM_WIDTH - 1;
     }
 
     while (padding--) abAppend(ab, " ", 1);
 
     if (cpu.pc == i)
-        abAppend(ab, " <-- ", ARROW_WIDTH);
+        abAppend(ab, " <--", 4);
     else
-        abAppend(ab, "     ", ARROW_WIDTH);
+        abAppend(ab, "    ", 4);
 }
 
 void draw_ram(abuf_t *ab, int i) {
