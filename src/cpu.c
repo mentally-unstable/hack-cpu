@@ -11,10 +11,15 @@
 void draw_rom(abuf_t *ab, int i);
 void draw_ram(abuf_t *ab, int i);
 void draw_scr(abuf_t *ab, int i); void draw_reg(abuf_t *ab, int i);
-#define ROM_WIDTH 25
+
+#define ASM_WIDTH 25
 #define ARROW_WIDTH 5
-#define MAX_SCR_WIDTH 50
-#define MIN_WIDTH (MAX_SCR_WIDTH + ARROW_WIDTH + ROM_WIDTH)
+#define NUMBER_WIDTH 6
+#define ROM_WIDTH (ASM_WIDTH + ARROW_WIDTH + NUMBER_WIDTH)
+
+#define MAX_SCR_WIDTH 100
+
+#define MIN_WIDTH (MAX_SCR_WIDTH + ROM_WIDTH)
 
 struct cpu_t {
     // registers
@@ -95,19 +100,24 @@ void draw_rom(abuf_t *ab, int i) {
     int padding;
 
     if (i < sim.romlines) {
+        char num[6];
+        snprintf(&num[0], 6, "%5d", i);
+        abAppend(ab, &num[0], NUM_WIDTH);
+        abAppend(ab, " ", 1);
+
         abAppend(ab, cpu.rom[i], strlen(cpu.rom[i]));
-        padding = ROM_WIDTH - strlen(cpu.rom[i]);
+        padding = ASM_WIDTH - strlen(cpu.rom[i]);
     } else {
         abAppend(ab, "~", 1);
-        padding = ROM_WIDTH - 1;
+        padding = ASM_WIDTH - 1;
     }
 
     while (padding--) abAppend(ab, " ", 1);
 
     if (cpu.pc == i)
-        abAppend(ab, " <--", 4);
+        abAppend(ab, " <-- ", ARROW_WIDTH);
     else
-        abAppend(ab, "    ", 4);
+        abAppend(ab, "     ", ARROW_WIDTH);
 }
 
 void draw_ram(abuf_t *ab, int i) {
