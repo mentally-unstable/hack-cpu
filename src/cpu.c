@@ -21,6 +21,8 @@ void draw_scr(abuf_t *ab, int i); void draw_reg(abuf_t *ab, int i);
 
 #define MIN_WIDTH (MAX_SCR_WIDTH + ROM_WIDTH)
 
+#define SCROLLZONE 10
+
 struct cpu_t {
     // registers
     int a;
@@ -49,6 +51,7 @@ void cpu_init(char **prog, int lines) {
         die("getWindowSize");
 
     sim.romlines = lines;
+    sim.romoff = 0;
 
     cpu.a = 0;
     cpu.d = 0;
@@ -71,9 +74,11 @@ void cpu_process_key(int c) {
 }
 
 void cpu_update(void) {
+    if (sim.paused) return;
+
     cpu.pc++;
     if (cpu.pc >= sim.romlines)
-        cpu.pc = 0;
+        sim.paused = 1;
 }
 
 void cpu_render(void) {
@@ -97,19 +102,15 @@ void cpu_render(void) {
 }
 
 void draw_rom(abuf_t *ab, int i) {
-    int padding;
-
-    if (i < sim.romlines) {
+    int padding = 0;
+    if (i < sim.height) {
         char num[6];
         snprintf(&num[0], 6, "%5d", i);
-        abAppend(ab, &num[0], NUM_WIDTH);
+        abAppend(ab, &num[0], NUMBER_WIDTH);
         abAppend(ab, " ", 1);
 
         abAppend(ab, cpu.rom[i], strlen(cpu.rom[i]));
         padding = ASM_WIDTH - strlen(cpu.rom[i]);
-    } else {
-        abAppend(ab, "~", 1);
-        padding = ASM_WIDTH - 1;
     }
 
     while (padding--) abAppend(ab, " ", 1);
