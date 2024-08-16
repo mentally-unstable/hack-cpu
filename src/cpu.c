@@ -135,6 +135,9 @@ void draw_rom(abuf_t *ab, int i) {
 }
 
 void draw_ram(abuf_t *ab, int i) {
+    if (i == cpu.a)
+        abAppend(ab, "\x1b[7m", 5);
+
     char val[9];
     snprintf(&val[0], 9, "%8d", cpu.ram[i]);
     abAppend(ab, &val[0], 9);
@@ -142,6 +145,8 @@ void draw_ram(abuf_t *ab, int i) {
     char num[6];
     snprintf(&num[0], 6, "%5d", i);
     abAppend(ab, &num[0], NUMBER_WIDTH);
+
+    abAppend(ab, "\x1b[0m", 5);
 }
 
 void draw_scr(abuf_t *ab, int i) {
