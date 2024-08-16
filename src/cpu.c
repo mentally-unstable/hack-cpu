@@ -21,7 +21,7 @@ void draw_scr(abuf_t *ab, int i); void draw_reg(abuf_t *ab, int i);
 
 #define MIN_WIDTH (MAX_SCR_WIDTH + ROM_WIDTH)
 
-#define SCROLLZONE 10
+#define SCROLLZONE (10)
 
 struct cpu_t {
     // registers
@@ -68,7 +68,12 @@ void cpu_process_key(int c) {
     switch (c) {
         case 'q':
             write(STDOUT_FILENO, "\x1b[H\x1b[2J", 7);
+            printf("quit\n\rdims: %dx%d\r\nlines: %d\r\nromoff: %d\r\n",
+                    sim.width, sim.height, sim.romlines, sim.romoff);
             exit(0);
+            break;
+        case ' ':
+            sim.paused = sim.paused ? 0 : 1;
             break;
     }
 }
@@ -85,8 +90,12 @@ void cpu_render(void) {
     write(STDOUT_FILENO, "\x1b[2J", 7);
     abuf_t ab = ABUF_INIT;
 
+    if (cpu.pc != sim.romlines && cpu.pc >= (sim.height - SCROLLZONE))
+        sim.romoff++;
+
     for (int i = 0; i < sim.height; i++) {
-        draw_rom(&ab, i);
+
+        draw_rom(&ab, i + sim.romoff);
         // draw_ram(&ab, i);
         // draw_scr(&ab, i);
         // draw_reg(&ab, i);
