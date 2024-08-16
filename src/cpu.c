@@ -28,7 +28,7 @@ struct cpu_t {
     int a;
     int d;
     // mem
-    char *ram;
+    int *ram;
     char **rom;
 
     int pc;
@@ -40,6 +40,7 @@ struct sim_t {
     int romlines;
     int romoff; // offset, scrolling
     char *screenbuf;
+    int ramsize;
 
     int width;
     int height;
@@ -56,8 +57,8 @@ void cpu_init(char **prog, int lines) {
     cpu.a = 0;
     cpu.d = 0;
 
-    // TODO configurable
-    cpu.ram = (char *) calloc(1000, sizeof(char));
+    sim.ramsize = 1000;
+    cpu.ram = (int *) calloc(sim.ramsize, sizeof(int));
 
     cpu.rom = prog;
 
@@ -81,6 +82,9 @@ void cpu_process_key(int c) {
 void cpu_update(void) {
     if (sim.paused) return;
 
+    if (cpu.pc != sim.romlines && cpu.pc >= (sim.height - SCROLLZONE))
+        sim.romoff++;
+
     cpu.pc++;
     if (cpu.pc >= sim.romlines)
         sim.paused = 1;
@@ -90,13 +94,10 @@ void cpu_render(void) {
     write(STDOUT_FILENO, "\x1b[2J", 7);
     abuf_t ab = ABUF_INIT;
 
-    if (cpu.pc != sim.romlines && cpu.pc >= (sim.height - SCROLLZONE))
-        sim.romoff++;
-
     for (int i = 0; i < sim.height; i++) {
 
         draw_rom(&ab, i + sim.romoff);
-        // draw_ram(&ab, i);
+        draw_ram(&ab, i);
         // draw_scr(&ab, i);
         // draw_reg(&ab, i);
         abAppend(&ab, "\x1b[K", 3);
@@ -116,10 +117,13 @@ void draw_rom(abuf_t *ab, int i) {
         char num[6];
         snprintf(&num[0], 6, "%5d", i);
         abAppend(ab, &num[0], NUMBER_WIDTH);
-        abAppend(ab, " ", 1);
 
+        abAppend(ab, " ", 1);
         abAppend(ab, cpu.rom[i], strlen(cpu.rom[i]));
+
         padding = ASM_WIDTH - strlen(cpu.rom[i]);
+    } else {
+        padding = ROM_WIDTH - ARROW_WIDTH;
     }
 
     while (padding--) abAppend(ab, " ", 1);
@@ -131,7 +135,13 @@ void draw_rom(abuf_t *ab, int i) {
 }
 
 void draw_ram(abuf_t *ab, int i) {
-    if (i) abAppend(ab, "RAM", 3);
+    char val[9];
+    snprintf(&val[0], 9, "%8d", cpu.ram[i]);
+    abAppend(ab, &val[0], 9);
+
+    char num[6];
+    snprintf(&num[0], 6, "%5d", i);
+    abAppend(ab, &num[0], NUMBER_WIDTH);
 }
 
 void draw_scr(abuf_t *ab, int i) {
