@@ -10,7 +10,8 @@
 
 void draw_rom(abuf_t *ab, int i);
 void draw_ram(abuf_t *ab, int i);
-void draw_scr(abuf_t *ab, int i); void draw_reg(abuf_t *ab, int i);
+void draw_reg(abuf_t *ab, int i);
+void draw_numbers(abuf_t *ab, int i);
 
 void cpu_process_line(char *line);
 
@@ -89,10 +90,10 @@ void app_update(void) {
     if (cpu.pc >= (sim.height - SCROLLZONE))
         sim.romoff++;
 
+    cpu_process_line(cpu.rom[cpu.pc]);
+
     cpu.pc++;
     if (cpu.pc == sim.romlines) sim.paused = 1;
-
-    cpu_process_line(cpu.rom[cpu.pc]);
 }
 
 void app_render(void) {
@@ -103,7 +104,7 @@ void app_render(void) {
 
         draw_rom(&ab, i + sim.romoff);
         draw_ram(&ab, i);
-        // draw_scr(&ab, i);
+        draw_ram(&ab, i + 255);
         // draw_reg(&ab, i);
         abAppend(&ab, "\x1b[K", 3);
 
@@ -124,9 +125,7 @@ void draw_rom(abuf_t *ab, int i) {
         len = strlen(cpu.rom[i]);
         if (len > ASM_WIDTH) len = ASM_WIDTH;
 
-        char num[6];
-        snprintf(&num[0], 6, "%5d", i);
-        abAppend(ab, &num[0], NUMBER_WIDTH);
+        draw_numbers(ab, i);
 
         abAppend(ab, " ", 1);
         abAppend(ab, cpu.rom[i], len);
@@ -146,6 +145,8 @@ void draw_rom(abuf_t *ab, int i) {
 }
 
 void draw_ram(abuf_t *ab, int i) {
+    draw_numbers(ab, i);
+
     if (i == cpu.a)
         abAppend(ab, "\x1b[7m", 5);
 
@@ -153,15 +154,15 @@ void draw_ram(abuf_t *ab, int i) {
     snprintf(&val[0], 9, "%8d", cpu.ram[i]);
     abAppend(ab, &val[0], 9);
 
-    char num[6];
-    snprintf(&num[0], 6, "%5d", i);
-    abAppend(ab, &num[0], NUMBER_WIDTH);
-
     abAppend(ab, "\x1b[27m", 5);
 }
 
-void draw_scr(abuf_t *ab, int i) {
-    if (i) abAppend(ab, "SCR", 3);
+void draw_numbers(abuf_t *ab, int i) {
+    abAppend(ab, "\x1b[38;2;155;155;155m", 19);
+    char num[6];
+    snprintf(&num[0], 6, "%5d", i);
+    abAppend(ab, &num[0], NUMBER_WIDTH);
+    abAppend(ab, "\x1b[0m", 4);
 }
 
 void draw_reg(abuf_t *ab, int i) {
@@ -171,5 +172,24 @@ void draw_reg(abuf_t *ab, int i) {
 // XXX CPU LOGIC
 
 void cpu_process_line(char *line) {
-    ;
+    int n = 0;
+
+    for (int i = 0; i < 16; i++) {
+        n <<= 1;
+        if (line[i] == '1')
+            n |= 1;
+    }
+
+    int t = n & 0x8000; // type of instruction
+
+    if (!t) {
+        int val = n & 0x7FFF;
+        cpu.a = val;
+        return;
+    }
+
+    int a = n & 0x1000;
+    int comp = n & 0x0FC0;
+    int dest = n & 0x0058;
+    int jump = n & 0x0007;
 }

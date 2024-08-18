@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
         app_process_key(c);
         app_update();
         app_render();
-        // usleep(1000000);
+        // usleep(10000000);
     }
 
     free(&rom[0][0]);
