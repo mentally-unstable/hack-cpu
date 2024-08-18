@@ -1,4 +1,5 @@
 // hello
+// credit to Salvatore Sanfilippo <antirez at gmail dot com>
 #ifndef ABUF_INCLUDED
 #define ABUF_INCLUDED
 

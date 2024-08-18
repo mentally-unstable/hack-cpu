@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 
     int lines = 0;
     char **rom = file_import(args.in, &lines);
-    cpu_init(rom, lines);
+    app_init(rom, lines);
 
     int c, nread;
     for (;;)
@@ -33,9 +33,9 @@ int main(int argc, char **argv) {
                 die("getIfKey");
         }
 
-        cpu_process_key(c);
-        cpu_update();
-        cpu_render();
+        app_process_key(c);
+        app_update();
+        app_render();
         // usleep(1000000);
     }
 

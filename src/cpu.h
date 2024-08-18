@@ -2,9 +2,9 @@
 #ifndef CPU_INCLUDED
 #define CPU_INCLUDED
 
-void cpu_init(char **prog, int lines);
-void cpu_process_key(int c);
-void cpu_update(void);
-void cpu_render(void);
+void app_init(char **prog, int lines);
+void app_process_key(int c);
+void app_update(void);
+void app_render(void);
 
 #endif

@@ -12,7 +12,9 @@ void draw_rom(abuf_t *ab, int i);
 void draw_ram(abuf_t *ab, int i);
 void draw_scr(abuf_t *ab, int i); void draw_reg(abuf_t *ab, int i);
 
-#define ASM_WIDTH 25
+void cpu_process_line(char *line);
+
+#define ASM_WIDTH 20
 #define ARROW_WIDTH 5
 #define NUMBER_WIDTH 6
 #define ROM_WIDTH (ASM_WIDTH + ARROW_WIDTH + NUMBER_WIDTH)
@@ -46,7 +48,7 @@ struct sim_t {
     int height;
 } sim;
 
-void cpu_init(char **prog, int lines) {
+void app_init(char **prog, int lines) {
     enableRawMode();
     if (getWindowSize(&sim.height, &sim.width))
         die("getWindowSize");
@@ -60,14 +62,16 @@ void cpu_init(char **prog, int lines) {
     sim.ramsize = 1000;
     cpu.ram = (int *) calloc(sim.ramsize, sizeof(int));
 
-    cpu.rom = prog;
+    cpu.rom = prog; // is this safe lol
 
     cpu.pc = 0;
 }
 
-void cpu_process_key(int c) {
+void app_process_key(int c) {
     switch (c) {
         case 'q':
+            free(cpu.ram);
+
             write(STDOUT_FILENO, "\x1b[H\x1b[2J", 7);
             printf("quit\n\rdims: %dx%d\r\nlines: %d\r\nromoff: %d\r\n",
                     sim.width, sim.height, sim.romlines, sim.romoff);
@@ -79,20 +83,21 @@ void cpu_process_key(int c) {
     }
 }
 
-void cpu_update(void) {
+void app_update(void) {
     if (sim.paused) return;
 
-    if (cpu.pc != sim.romlines && cpu.pc >= (sim.height - SCROLLZONE))
+    if (cpu.pc >= (sim.height - SCROLLZONE))
         sim.romoff++;
 
     cpu.pc++;
-    if (cpu.pc >= sim.romlines)
-        sim.paused = 1;
+    if (cpu.pc == sim.romlines) sim.paused = 1;
+
+    cpu_process_line(cpu.rom[cpu.pc]);
 }
 
-void cpu_render(void) {
-    write(STDOUT_FILENO, "\x1b[2J", 7);
+void app_render(void) {
     abuf_t ab = ABUF_INIT;
+    abAppend(&ab, "\x1b[2J", 4);
 
     for (int i = 0; i < sim.height; i++) {
 
@@ -106,24 +111,30 @@ void cpu_render(void) {
             abAppend(&ab, "\r\n", 2);
     }
 
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    abAppend(&ab, "\x1b[H", 3);
     write(STDOUT_FILENO, ab.b, ab.len);
     abFree(&ab);
 }
 
 void draw_rom(abuf_t *ab, int i) {
     int padding = 0;
-    if (i < sim.height) {
+
+    int len = 0;
+    if ((i - sim.romoff) < sim.height && i < sim.romlines) {
+        len = strlen(cpu.rom[i]);
+        if (len > ASM_WIDTH) len = ASM_WIDTH;
+
         char num[6];
         snprintf(&num[0], 6, "%5d", i);
         abAppend(ab, &num[0], NUMBER_WIDTH);
 
         abAppend(ab, " ", 1);
-        abAppend(ab, cpu.rom[i], strlen(cpu.rom[i]));
+        abAppend(ab, cpu.rom[i], len);
 
-        padding = ASM_WIDTH - strlen(cpu.rom[i]);
+        padding = ASM_WIDTH - len;
     } else {
-        padding = ROM_WIDTH - ARROW_WIDTH;
+        abAppend(ab, "~", 1);
+        padding = ROM_WIDTH - ARROW_WIDTH - 1;
     }
 
     while (padding--) abAppend(ab, " ", 1);
@@ -146,7 +157,7 @@ void draw_ram(abuf_t *ab, int i) {
     snprintf(&num[0], 6, "%5d", i);
     abAppend(ab, &num[0], NUMBER_WIDTH);
 
-    abAppend(ab, "\x1b[0m", 5);
+    abAppend(ab, "\x1b[27m", 5);
 }
 
 void draw_scr(abuf_t *ab, int i) {
@@ -155,4 +166,10 @@ void draw_scr(abuf_t *ab, int i) {
 
 void draw_reg(abuf_t *ab, int i) {
     if (i) abAppend(ab, "REG", 3);
+}
+
+// XXX CPU LOGIC
+
+void cpu_process_line(char *line) {
+    ;
 }
