@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
     {
         c = 0;
         getIfKey(&c);
+
         app_process_key(c);
         app_update();
         app_render();
