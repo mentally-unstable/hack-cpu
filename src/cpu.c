@@ -35,6 +35,9 @@ struct cpu_t {
     char **rom;
 
     int pc;
+
+    int alu_zero;
+    int alu_neg;
 } cpu;
 
 struct sim_t {
@@ -81,6 +84,15 @@ void app_process_key(int c) {
         case ' ':
             sim.paused = sim.paused ? 0 : 1;
             break;
+        case 'r':
+            cpu.pc = 0;
+            memset(cpu.ram, 0, sim.ramsize);
+            cpu.a = 0;
+            cpu.d = 0;
+            break;
+        case 'n':
+            cpu.pc++;
+            break;
     }
 }
 
@@ -103,9 +115,11 @@ void app_render(void) {
     for (int i = 0; i < sim.height; i++) {
 
         draw_rom(&ab, i + sim.romoff);
-        draw_ram(&ab, i);
-        draw_ram(&ab, i + 255);
-        // draw_reg(&ab, i);
+        if (i < sim.height - 2) {
+            draw_ram(&ab, i);
+            draw_ram(&ab, i + 255);
+        }
+        draw_reg(&ab, i);
         abAppend(&ab, "\x1b[K", 3);
 
         if (i != sim.height - 1)
@@ -166,7 +180,21 @@ void draw_numbers(abuf_t *ab, int i) {
 }
 
 void draw_reg(abuf_t *ab, int i) {
-    if (i) abAppend(ab, "REG", 3);
+    int padding = 3;
+    while (padding--) abAppend(ab, " ", 1);
+    if (i != sim.height - 1) return;
+
+    abAppend(ab, "A: ", 3);
+    char a[8];
+    snprintf(&a[0], 8, "%7d", cpu.a);
+    abAppend(ab, &a[0], 8);
+
+    abAppend(ab, "  ", 2);
+
+    abAppend(ab, "D: ", 3);
+    char d[9];
+    snprintf(&d[0], 9, "%8d", cpu.d);
+    abAppend(ab, &d[0], 9);
 }
 
 // XXX CPU LOGIC
@@ -190,6 +218,68 @@ void cpu_process_line(char *line) {
 
     int a = n & 0x1000;
     int comp = n & 0x0FC0;
+
+    comp >>= 6;
+    int zx = comp & 0b100000;
+    int nx = comp & 0b010000;
+    int zy = comp & 0b001000;
+    int ny = comp & 0b000100;
+    int f  = comp & 0b000010;
+    int no = comp & 0b000001;
+
+    // x = D, y = A/M
+    if (zx) cpu.d = 0;
+    if (nx) cpu.d = !cpu.d;
+    int *res, *y;
+
+    if (a) {
+        if (cpu.a > sim.ramsize) {
+            sim.paused = 1;
+            // set_error("can't access memory at %d\r\n", cpu.a);
+            return;
+        }
+
+        y = &cpu.ram[cpu.a];
+    } else {
+        y = &cpu.a;
+    }
+
+    if (zy) *y = 0;
+    if (ny) *y = !(*y)
+
+    if (f)
+        res = cpu.d + *y;
+    else
+        res = cpu.d & *y;
+
+    if (no) res = !res;
+
     int dest = n & 0x0058;
+    dest >>= 3;
+    int d1 = dest & 0b100;
+    int d2 = dest & 0b010;
+    int d3 = dest & 0b001;
+
+    if (d1) cpu.a = res;
+    if (d2) cpu.d = res;
+    if (d3) cpu.ram[cpu.a] = res;
+
     int jump = n & 0x0007;
+    int j1 = jump & 0b100;
+    int j2 = jump & 0b010;
+    int j3 = jump & 0b001;
+
+    int gt = 0;
+    int eq = 0;
+    int lt = 0;
+    if (j1 && !cpu.alu_zero && !cpu.alu_neg)
+        lt = 1;
+
+    if (j2 && cpu.alu_zero && !cpu.alu_neg)
+        eq = 1;
+
+    if (j3 && !cpu.alu_zero && cpu.alu_neg)
+        gt = 1;
+
+    if (lt || eq || gt) cpu.pc = cpu.a;
 }
