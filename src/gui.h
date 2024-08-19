@@ -13,7 +13,7 @@ int readKey(void);
 /*
    like readKey but without the wait
 */
-//int getIfKey(void);
+void getIfKey(int *c);
 
 void die(const char *str);
 

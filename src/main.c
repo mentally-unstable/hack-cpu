@@ -25,18 +25,15 @@ int main(int argc, char **argv) {
     char **rom = file_import(args.in, &lines);
     app_init(rom, lines);
 
-    int c, nread;
+    int c;
     for (;;)
     {
-        if ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
-             if (nread == -1 && errno != EAGAIN)
-                 die("getIfKey");
-        }
-
+        c = 0;
+        getIfKey(&c);
         app_process_key(c);
         app_update();
         app_render();
-        // usleep(10000000);
+        // usleep(1000);
     }
 
     free(&rom[0][0]);

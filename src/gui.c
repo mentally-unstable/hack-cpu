@@ -30,7 +30,7 @@ void enableRawMode(void) {
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
 
     raw.c_cc[VMIN] = 0;
-    raw.c_cc[VTIME] = 1;
+    raw.c_cc[VTIME] = 1; // 0 for fastest
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
         die("tcsetattr");
@@ -61,15 +61,13 @@ int readKey(void) {
     return c;
 }
 
-// int getIfKey(void) {
-//     int nread;
-//     int c;
-//     if ((nread = read(STDIN_FILENO, &c, 1)) != 1)
-//         if (nread == -1 && errno != EAGAIN)
-//             die("getIfKey");
-//
-//     return c;
-// }
+void getIfKey(int *c) {
+    int nread;
+    if ((nread = read(STDIN_FILENO, c, 1)) != 1) {
+         if (nread == -1 && errno != EAGAIN)
+             die("getIfKey");
+    }
+}
 
 void die(const char *str) {
     write(STDOUT_FILENO, "\x1b[2J", 4);
