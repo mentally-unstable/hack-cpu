@@ -259,7 +259,7 @@ void cpu_process_line(char *line) {
 
     int x = cpu.d;
     if (zx) x = 0;
-    if (nx) x = !cpu.d;
+    if (nx) x = ~x;
 
     int res, y;
     if (a) {
@@ -275,7 +275,7 @@ void cpu_process_line(char *line) {
     }
 
     if (zy) y = 0;
-    if (ny) y = !(y);
+    if (ny) y = ~y;
 
     if (f)
         res = (x ^ y);

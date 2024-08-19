@@ -150,9 +150,10 @@ void cpu_process_line(char *line) {
 }
 
 int main(void) {
-    app_init(NULL, 0);
-    char *num = "1110111111001000";
-    printf("%s\n", num);
-    cpu_process_line(num);
+    // app_init(NULL, 0);
+    // char *num = "1110111111001000";
+    // printf("%s\n", num);
+    // cpu_process_line(num);
+    printf("%d\n", 7 & (~0));
     return 0;
 }
