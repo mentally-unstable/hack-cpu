@@ -29,8 +29,8 @@ int main(int argc, char **argv) {
     for (;;)
     {
         if ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
-            if (nread == -1 && errno != EAGAIN)
-                die("getIfKey");
+             if (nread == -1 && errno != EAGAIN)
+                 die("getIfKey");
         }
 
         app_process_key(c);

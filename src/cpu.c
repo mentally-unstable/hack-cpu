@@ -75,14 +75,14 @@ void app_process_key(int c) {
     switch (c) {
         case 'q':
             free(cpu.ram);
-
             write(STDOUT_FILENO, "\x1b[H\x1b[2J", 7);
-            printf("quit\n\rdims: %dx%d\r\nlines: %d\r\nromoff: %d\r\n",
-                    sim.width, sim.height, sim.romlines, sim.romoff);
             exit(0);
             break;
         case ' ':
-            sim.paused = sim.paused ? 0 : 1;
+            sim.paused = 1;
+            break;
+        case '\r':
+            sim.paused = 0;
             break;
         case 'r':
             cpu.pc = 0;
@@ -91,7 +91,9 @@ void app_process_key(int c) {
             cpu.d = 0;
             break;
         case 'n':
-            cpu.pc++;
+            sim.paused = 0;
+            app_update();
+            sim.paused = 1;
             break;
     }
 }
@@ -230,7 +232,7 @@ void cpu_process_line(char *line) {
     // x = D, y = A/M
     if (zx) cpu.d = 0;
     if (nx) cpu.d = !cpu.d;
-    int *res, *y;
+    int res, *y;
 
     if (a) {
         if (cpu.a > sim.ramsize) {
@@ -245,7 +247,7 @@ void cpu_process_line(char *line) {
     }
 
     if (zy) *y = 0;
-    if (ny) *y = !(*y)
+    if (ny) *y = !(*y);
 
     if (f)
         res = cpu.d + *y;
