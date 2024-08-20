@@ -39,6 +39,9 @@ struct cpu_t {
     int pc;
 
     int alu;
+    int alu_f;
+    int alu_x;
+    int alu_y;
     int alu_zero;
     int alu_neg;
 } cpu;
@@ -69,6 +72,9 @@ void app_init(char **prog, int lines) {
     cpu.a = 0;
     cpu.d = 0;
     cpu.alu = 0;
+    cpu.alu_f = 0;
+    cpu.alu_x = 0;
+    cpu.alu_y = 0;
 
     sim.ramsize = 1000;
     cpu.ram = (int *) calloc(sim.ramsize, sizeof(int));
@@ -81,7 +87,6 @@ void app_process_key(int c) {
     switch (c) {
         case 'q':
             free(cpu.ram);
-            write(STDOUT_FILENO, "\x1b[H\x1b[2J", 7);
             exit(0);
             break;
         case ' ':
@@ -123,7 +128,6 @@ void app_update(void) {
 
 void app_render(void) {
     abuf_t ab = ABUF_INIT;
-    abAppend(&ab, "\x1b[2J", 4);
 
     for (int i = 0; i < sim.height; i++) {
 
@@ -214,6 +218,19 @@ void draw_reg(abuf_t *ab, int i) {
     abAppend(ab, "  ", 2);
 
     abAppend(ab, "ALU: ", 5);
+
+    char num1[6];
+    snprintf(&num1[0], 6, "%5d", cpu.alu_x);
+    abAppend(ab, &num1[0], NUMBER_WIDTH);
+
+    abAppend(ab, cpu.alu_f ? " + " : " & ", 3);
+
+    char num2[6];
+    snprintf(&num2[0], 6, "%5d", cpu.alu_x);
+    abAppend(ab, &num2[0], NUMBER_WIDTH);
+
+    abAppend(ab, " = ", 3);
+
     char alu[9];
     snprintf(&alu[0], 9, "%8d", cpu.alu);
     abAppend(ab, &alu[0], 9);
@@ -277,13 +294,17 @@ void cpu_process_line(char *line) {
     if (zy) y = 0;
     if (ny) y = ~y;
 
-    if (f)
-        res = (x ^ y);
-    else
+    if (f) {
+        res = (x + y);
+    } else {
         res = x & y;
+    }
 
     if (no) res = !res;
 
+    cpu.alu_f = f;
+    cpu.alu_x = x;
+    cpu.alu_y = y;
     cpu.alu = res; // XXX
 
     int dest = n & 0x0038;
