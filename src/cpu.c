@@ -300,7 +300,7 @@ void cpu_process_line(char *line) {
         res = x & y;
     }
 
-    if (no) res = !res;
+    if (no) res = ~res;
 
     cpu.alu_f = f;
     cpu.alu_x = x;
