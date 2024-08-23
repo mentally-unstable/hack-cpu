@@ -53,6 +53,7 @@ struct sim_t {
     int romoff; // offset, scrolling
     char *screenbuf;
     int ramsize;
+    int line;
 
     int width;
     int height;
@@ -68,6 +69,7 @@ void app_init(char **prog, int lines) {
     sim.romlines = lines;
     sim.romoff = 0;
     sim.paused = 1;
+    sim.line = 0;
 
     cpu.a = 0;
     cpu.d = 0;
@@ -96,15 +98,17 @@ void app_process_key(int c) {
             sim.paused = 0;
             break;
         case 'r':
-            cpu.pc = 0;
+            cpu.pc = 1;
             memset(cpu.ram, 0, sim.ramsize*4);
             cpu.a = 0;
             cpu.d = 0;
             cpu.alu = 0;
+            app_render();
             break;
         case 'n':
             sim.paused = 0;
             app_update();
+            app_render();
             sim.paused = 1;
             break;
     }
@@ -118,30 +122,33 @@ void app_update(void) {
         return;
     }
 
-    if (cpu.pc >= (sim.height - SCROLLZONE))
+    if (cpu.pc < sim.romoff || cpu.pc > (sim.height + sim.romoff)) {
+        sim.romoff = cpu.pc;
+    }
+
+    if (cpu.pc - sim.romoff >= (sim.height - SCROLLZONE)) {
         sim.romoff++;
+    }
 
     cpu_process_line(cpu.rom[cpu.pc]);
-
-    cpu.pc++;
 }
 
 void app_render(void) {
     abuf_t ab = ABUF_INIT;
 
-    for (int i = 0; i < sim.height; i++) {
+    for (sim.line = 0; sim.line < sim.height; sim.line++) {
 
-        draw_rom(&ab, i + sim.romoff);
-        if (i < sim.height - 2) {
-            draw_ram(&ab, i);
-            draw_ram(&ab, i + 255);
+        draw_rom(&ab, sim.line + sim.romoff);
+        if (sim.line < sim.height - 2) {
+            draw_ram(&ab, sim.line);
+            draw_ram(&ab, sim.line + 255);
         }
-        draw_reg(&ab, i);
-        draw_scr(&ab, i);
-        draw_dbg(&ab, i);
+        draw_reg(&ab, sim.line);
+        // draw_scr(&ab, sim.line);
+        // draw_dbg(&ab, sim.line);
         abAppend(&ab, "\x1b[K", 3);
 
-        if (i != sim.height - 1)
+        if (sim.line != sim.height - 1)
             abAppend(&ab, "\r\n", 2);
     }
 
@@ -237,11 +244,11 @@ void draw_reg(abuf_t *ab, int i) {
 }
 
 void draw_scr(abuf_t *ab, int i) {
-    ;
+    if (ab->len) printf("%d\n", i);
 }
 
 void draw_dbg(abuf_t *ab, int i) {
-    ;
+    if (ab->len) printf("%d\n", i);
 }
 
 // XXX CPU LOGIC
@@ -307,6 +314,12 @@ void cpu_process_line(char *line) {
     cpu.alu_y = y;
     cpu.alu = res; // XXX
 
+    if (res < 0) cpu.alu_neg = 1;
+    else cpu.alu_neg = 0;
+
+    if (res == 0) cpu.alu_zero = 1;
+    else cpu.alu_zero = 0;
+
     int dest = n & 0x0038;
     dest >>= 3;
     int d1 = dest & 0b100;
@@ -335,4 +348,5 @@ void cpu_process_line(char *line) {
         gt = 1;
 
     if (lt || eq || gt) cpu.pc = cpu.a;
+    else                cpu.pc++;
 }
