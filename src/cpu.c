@@ -83,11 +83,14 @@ void app_init(char **prog, int lines) {
 
     cpu.rom = prog; // is this safe lol
     cpu.pc = 0;
+
+    write(STDOUT_FILENO, "\x1b[?1049h", 8);
 }
 
 void app_process_key(int c) {
     switch (c) {
         case 'q':
+            write(STDOUT_FILENO, "\x1b[?1049l", 8);
             free(cpu.ram);
             exit(0);
             break;
@@ -267,6 +270,7 @@ void cpu_process_line(char *line) {
     if (!t) {
         int val = n & 0x7FFF;
         cpu.a = val;
+        cpu.pc++;
         return;
     }
 

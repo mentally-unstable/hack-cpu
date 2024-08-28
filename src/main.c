@@ -16,11 +16,6 @@ int main(int argc, char **argv) {
     args_t args = { NULL };
     args_parse(&args, argc, argv);
 
-/*
-    if (args.whatever)
-        global.whatever = yes;
-*/
-
     int lines = 0;
     char **rom = file_import(args.in, &lines);
     app_init(rom, lines);
@@ -34,7 +29,6 @@ int main(int argc, char **argv) {
         app_process_key(c);
         app_update();
         app_render();
-        // usleep(1000);
     }
 
     free(&rom[0][0]);
